@@ -47,14 +47,31 @@ function buildWildberriesProductContent(contentElement) {
 
         getAllTrackingProducts(
             (numbers) => {
-                let liist = "<h1>WEL: " + numbers.join(" ") + "</h1>";
-                // let htmlList = "<ul><li>" + numbers.join("</li><li>") + "</li></ul>";
-                // contentElement.innerHTML = htmlList;
-                contentElement.innerHTML = liist;
+                contentElement.appendChild(generateLinksList(numbers));//todo: тут работа сейчас
             },
             contentElement
         );
     });
+}
+
+function generateLinksList(productsIdsArray) {
+    let linksArray = productsIdsArray.map(num => `https://www.wildberries.ru/catalog/${num}/detail.aspx`);
+
+    let ul = document.createElement("ul");
+
+    linksArray.forEach(link => {
+        let li = document.createElement("li");
+        let a = document.createElement("a");
+
+        a.href = link;
+        a.textContent = link;
+        a.target = "_blank"; // Открывать ссылки в новой вкладке
+
+        li.appendChild(a);
+        ul.appendChild(li);
+    });
+
+    return ul;
 }
 
 function buildDefaultWildberriesContent() {
