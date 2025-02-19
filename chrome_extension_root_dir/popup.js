@@ -24,33 +24,35 @@ document.addEventListener("DOMContentLoaded", buildContentForCurrentTab);
 // билдеры контента для каждого типа вкладок:
 
 function buildWildberriesProductContent(contentElement) {
-    const content = `
-        <p>Вы на странице товара Wildberries!</p>
-        <p>Это страница товара.</p>
-        <button id="buttonAddProductToTrack">Добавить в отслеживаемые!</button>
-        <button id="buttonListAllTrackingProducts">Просмотреть все отслеживаемые!</button>
-    `;
-    contentElement.innerHTML = content;
+    contentElement.innerHTML = "";
 
-    const button = contentElement.querySelector("#buttonAddProductToTrack");
-    button.addEventListener('click', function () {
+    //elements creating:
+    const message = document.createElement("p");
+    message.textContent = "Вы на странице товара Wildberries!";
 
-        fetchProductId(
-            (productId) => {
-                addProduct(productId, contentElement);
-            }
-        );
+    const message2 = document.createElement("p");
+    message2.textContent = "Это страница товара.";
+
+    const addButton = document.createElement("button");
+    addButton.id = "buttonAddProductToTrack";
+    addButton.textContent = "Добавить в отслеживаемые!";
+
+    const listButton = document.createElement("button");
+    listButton.id = "buttonListAllTrackingProducts";
+    listButton.textContent = "Просмотреть все отслеживаемые!";
+
+    // Вставляем элементы в contentElement
+    contentElement.append(message, message2, addButton, listButton);
+
+    // Добавляем обработчики событий
+    addButton.addEventListener("click", () => {
+        fetchProductId((productId) => addProduct(productId, contentElement));
     });
 
-    const button1 = contentElement.querySelector("#buttonListAllTrackingProducts");
-    button1.addEventListener('click', function () {
-
-        getAllTrackingProducts(
-            (numbers) => {
-                contentElement.appendChild(generateLinksList(numbers));//todo: тут работа сейчас
-            },
-            contentElement
-        );
+    listButton.addEventListener("click", () => {
+        getAllTrackingProducts((numbers) => {
+            contentElement.appendChild(generateLinksList(numbers));
+        });
     });
 }
 
