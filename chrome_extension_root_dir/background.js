@@ -125,6 +125,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.get(["numbers"], (result) => {
       let savedNumbers = Array.isArray(result.numbers) ? result.numbers : [];
       let isTracking = savedNumbers.includes(id);
+      console.log("PPPPPPPPPPPPPPPPPPPPPPPPPPPPP: " + isTracking + id);
       sendResponse({ success: true, tracking: isTracking });
     });
 

@@ -1,58 +1,157 @@
+document.addEventListener("DOMContentLoaded", buildContentOnStart);
 
-// определение основного popup окна:
-function buildContentForCurrentTab() {
+function buildContentOnStart() {
+    const contentElement = document.getElementById("content");
+    buildMainContentPage(contentElement);
+}
+
+//todo: построение всех кнопок тоже вынести в отдельные ф-ии
+//todo: хорошая идея: пусть каждая build-page (окон а не мелких элементов) ф-я начинает с uildBaseContent(contentElement)
+
+function buildMainContentPage(contentElement) {
     chrome.runtime.sendMessage({ action: 'checkTab' }, (response) => {
-        const contentElement = document.getElementById("content");
+
+        buildBaseContent(contentElement);
 
         if (response.isWildberries) {
             if (response.isProduct) {
-                buildWildberriesProductContent(contentElement);
+                buildWbProductContent(contentElement);
             } else {
-                 contentElement.innerHTML = buildDefaultWildberriesContent();
+                buildDefaultWbContent(contentElement);
             }
         } else {
-            contentElement.innerHTML = buildDefaultContent();
+            buildDefaultContent(contentElement);
         }
     });
 }
 
-// Запускаем функцию при загрузке попапа
-document.addEventListener("DOMContentLoaded", buildContentForCurrentTab);
-
-
-//---------------------------------------------------------------------------------------------------
-// билдеры контента для каждого типа вкладок:
-
-function buildWildberriesProductContent(contentElement) {
+function buildBaseContent(contentElement) {
     contentElement.innerHTML = "";
 
-    //elements creating:
     const message = document.createElement("p");
-    message.textContent = "Вы на странице товара Wildberries!";
+    message.textContent = "Расширение для отслеживания статистики и прогнозов цен товаров на сайте Wildberries.";
 
-    const message2 = document.createElement("p");
-    message2.textContent = "Это страница товара.";
+    contentElement.append(message);
+}
 
-    const addButton = document.createElement("button");
-    addButton.id = "buttonAddProductToTrack";
-    addButton.textContent = "Добавить в отслеживаемые!";
+function buildDefaultContent(contentElement) {//home page v1
+    const link = document.createElement("a");
+    link.href = "https://www.wildberries.ru";
+    link.textContent = "Перейти на Wildberries";
+    link.target = "_blank";
+    contentElement.append(link);
+}
 
+function buildDefaultWbContent(contentElement) {//homa page v2
+    buildListAllTrackingProductsButton(contentElement);
+}
+
+function buildWbProductContent(contentElement) {//home page v3
+    fetchProductId((productId) => {
+            isTrackingProduct((isTracking) => {
+                if (isTracking) {
+                    buildTrackingProductContent(contentElement);
+                } else {
+                    buildNotTrackingProductContent(contentElement);
+                }
+            }, productId)
+        }
+    )
+}
+
+function buildTrackingProductContent(contentElement) {
+    buildViewStatisticsButton(contentElement);
+    buildRemoveProductButton(contentElement);
+    buildListAllTrackingProductsButton(contentElement);
+}
+
+function buildNotTrackingProductContent(contentElement) {
+    buildAddProductButton(contentElement);
+    buildListAllTrackingProductsButton(contentElement);
+}
+
+
+
+//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
+//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
+//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
+function buildAddProductButton(contentElement) {
+    const addCurrentProductButton = document.createElement("button");
+    addCurrentProductButton.id = "addCurrentProductButton";
+    addCurrentProductButton.textContent = "Добавить этот товар в отслеживаемые";
+
+    addCurrentProductButton.addEventListener("click", () => {
+        //todo: лучше все это вынести в buildAddTrackingProductContentBuild(), который тоже с base начнет
+        fetchProductId((productId) => addProduct(productId, contentElement));
+    });
+
+    contentElement.append(addCurrentProductButton);
+}
+
+function buildRemoveProductButton(contentElement) {
+    const removeCurrentProductButton = document.createElement("button");
+    removeCurrentProductButton.id = "removeCurrentProductButton";
+    removeCurrentProductButton.textContent = "Удалить этот товар из отслеживаемых";
+
+    removeCurrentProductButton.addEventListener("click", () => {
+        //
+    });
+
+    contentElement.append(removeCurrentProductButton);
+}
+
+function buildViewStatisticsButton(contentElement) {
+    const viewCurrentProductStatisticsButton = document.createElement("button");
+    viewCurrentProductStatisticsButton.id = "viewCurrentProductStatisticsButton";
+    viewCurrentProductStatisticsButton.textContent = "Смотреть статистику по этому товару";
+
+    viewCurrentProductStatisticsButton.addEventListener("click", () => {
+        //
+    });
+
+    contentElement.append(viewCurrentProductStatisticsButton);
+}
+
+function buildListAllTrackingProductsButton(contentElement) {
     const listButton = document.createElement("button");
     listButton.id = "buttonListAllTrackingProducts";
     listButton.textContent = "Просмотреть все отслеживаемые!";
 
-    // Вставляем элементы в contentElement
-    contentElement.append(message, message2, addButton, listButton);
-
-    // Добавляем обработчики событий
-    addButton.addEventListener("click", () => {
-        fetchProductId((productId) => addProduct(productId, contentElement));
+    listButton.addEventListener("click", () => {
+        //todo: лучше все это вынести в buildAllTrackingListContentBuild(), который тоже с base начнет
+        getAllTrackingProducts((numbers) => {
+            listButton.remove();
+            contentElement.append(generateLinksList(numbers));
+        });
     });
 
-    listButton.addEventListener("click", () => {
-        getAllTrackingProducts((numbers) => {
-            contentElement.appendChild(generateLinksList(numbers));
-        });
+    contentElement.append(listButton);
+}
+
+
+//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
+//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
+//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
+
+
+
+
+
+
+
+
+
+
+
+//------------------------------------------------------------------------вспомогательные ф-ии:
+
+function getAllTrackingProducts(callback, contentElement) {
+    chrome.runtime.sendMessage({ action: "getTrackedProducts" }, (response) => {
+        if (response && response.success) {
+            callback(response.numbers);
+        } else {
+            callback([]); // Если что-то пошло не так, возвращаем пустой массив
+        }
     });
 }
 
@@ -76,38 +175,10 @@ function generateLinksList(productsIdsArray) {
     return ul;
 }
 
-function buildDefaultWildberriesContent() {
-    const content = `
-        <p>Вы на сайте Wildberries, но это не страница товара.</p>
-    `;
-    return content;
-}
-
-function buildDefaultContent() {
-    const content = `
-        <p>Расширение для сбора статистики и прогнозирования цен товаров на сайте <a id="wb_link" href="https://www.wildberries.ru/">Wildberries</a>.</p>
-    `;
-  return content;
-}
-
-
-//-------------------------------------------------------------------------------------------------
-function fetchProductId(callback) {
-    chrome.runtime.sendMessage({ action: "getProductId"}, (response) => {
-        if (response && response.success) {
-            callback(response.productId);
-        } else {
-            callback(null);
-        }
-    });
-}
-//-------------------------------------------------------------------------------------------------
-
 function addProduct(id, contentElement) {
     //saving request to backend:
     //todo: отправить запрос к бэку на добавление юзера-отслеживателя товара id
     //saving into local storage:
-    console.log("OOOOO: " + id);
     chrome.runtime.sendMessage({ action: "addProduct", id: id }, (response) => {
         if (response && response.success) {
             contentElement.innerHTML = `<p>Добавлено!</p>`;
@@ -117,23 +188,12 @@ function addProduct(id, contentElement) {
     });
 }
 
-function removeProduct(id, contentElement) {
-    //removing request to backend:
-    //todo: отправить запрос к бэку на удаление юзера-отслеживателя товара id
-    //remove from local storage:
-    chrome.runtime.sendMessage({ action: "removeProduct", id: id }, (response) => {
+function fetchProductId(callback) {
+    chrome.runtime.sendMessage({ action: "getProductId"}, (response) => {
         if (response && response.success) {
-            contentElement.innerHTML = `<p>Удалено из отслеживания!</p>`;
-        }
-    });
-}
-
-function getAllTrackingProducts(callback, contentElement) {
-    chrome.runtime.sendMessage({ action: "getTrackedProducts" }, (response) => {
-        if (response && response.success) {
-            callback(response.numbers);
+            callback(response.productId);
         } else {
-            callback([]); // Если что-то пошло не так, возвращаем пустой массив
+            callback(null);
         }
     });
 }
@@ -147,52 +207,3 @@ function isTrackingProduct(callback, id) {
         }
     });
 }
-
-function getStatistics(id) {
-    //statistics request to backend:
-    //todo: request
-    //building statistics content:
-    //todo: build content using response from backend
-    const content = `
-        <p>Хей, тут будет статистика, честно...</p>
-    `;
-}
-
-function buildProduct() {
-    return [];
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
