@@ -34,12 +34,19 @@ function buildOperationStatusPage(contentElement, messageString) {
 }
 
 function buildStatisticsPage(contentElement, messageString, imageUrl) {
-    //todo: рисовать imageUrl
     buildBaseContent(contentElement);
 
     const message = document.createElement("p");
     message.textContent = messageString;
     contentElement.append(message);
+
+    if (imageUrl) {
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "График статистики";
+        image.style.maxWidth = "100%";
+        contentElement.append(image);
+    }
 
     buildHomeButton(contentElement);
 }
