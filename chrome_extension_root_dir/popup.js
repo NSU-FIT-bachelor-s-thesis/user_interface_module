@@ -44,6 +44,12 @@ function buildStatisticsPage(contentElement, messageString) {
     buildHomeButton(contentElement);
 }
 
+function buildAllTrackingListPage(contentElement, numbers) {
+    buildBaseContent(contentElement);
+    contentElement.append(generateLinksList(numbers));
+    buildHomeButton(contentElement);
+}
+
 //------------------- построение контента для страниц
 
 function buildBaseContent(contentElement) {
@@ -137,9 +143,7 @@ function buildListAllTrackingProductsButton(contentElement) {
 
     listButton.addEventListener("click", () => {
         getAllTrackingProducts((numbers) => {
-            //todo: лучше все это вынести в buildAllTrackingListContentBuild(), который тоже с base начнет
-            listButton.remove();
-            contentElement.append(generateLinksList(numbers));
+            buildAllTrackingListPage(contentElement, numbers);
         });
     });
 
@@ -180,7 +184,7 @@ function generateLinksList(productsIdsArray) {
         let a = document.createElement("a");
 
         a.href = link;
-        a.textContent = link;
+        a.textContent = link;//todo: сделать читабельную ссылку с названием товара (доставать название со страницы)
         a.target = "_blank";
 
         li.appendChild(a);
