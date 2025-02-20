@@ -5,9 +5,6 @@ function buildContentOnStart() {
     buildMainContentPage(contentElement);
 }
 
-//todo: построение всех кнопок тоже вынести в отдельные ф-ии
-//todo: хорошая идея: пусть каждая build-page (окон а не мелких элементов) ф-я начинает с uildBaseContent(contentElement)
-
 function buildMainContentPage(contentElement) {
     chrome.runtime.sendMessage({ action: 'checkTab' }, (response) => {
 
@@ -24,6 +21,30 @@ function buildMainContentPage(contentElement) {
         }
     });
 }
+
+//--------------------- построение промежуточных страниц
+function buildOperationStatusPage(contentElement, messageString) {
+    buildBaseContent(contentElement);
+
+    const message = document.createElement("p");
+    message.textContent = messageString;
+    contentElement.append(message);
+
+    buildHomeButton(contentElement);
+}
+
+function buildStatisticsPage(contentElement, messageString) {
+    //todo: добавить картинку с графиком (передается в аргументах)
+    buildBaseContent(contentElement);
+
+    const message = document.createElement("p");
+    message.textContent = messageString;
+    contentElement.append(message);
+
+    buildHomeButton(contentElement);
+}
+
+//------------------- построение контента для страниц
 
 function buildBaseContent(contentElement) {
     contentElement.innerHTML = "";
@@ -71,17 +92,14 @@ function buildNotTrackingProductContent(contentElement) {
 }
 
 
+//---------- построение кнопок
 
-//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
-//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
-//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
 function buildAddProductButton(contentElement) {
     const addCurrentProductButton = document.createElement("button");
     addCurrentProductButton.id = "addCurrentProductButton";
     addCurrentProductButton.textContent = "Добавить этот товар в отслеживаемые";
 
     addCurrentProductButton.addEventListener("click", () => {
-        //todo: лучше все это вынести в buildAddTrackingProductContentBuild(), который тоже с base начнет
         fetchProductId((productId) => addProduct(productId, contentElement));
     });
 
@@ -94,7 +112,7 @@ function buildRemoveProductButton(contentElement) {
     removeCurrentProductButton.textContent = "Удалить этот товар из отслеживаемых";
 
     removeCurrentProductButton.addEventListener("click", () => {
-        //
+        fetchProductId((productId) => removeProduct(productId, contentElement));
     });
 
     contentElement.append(removeCurrentProductButton);
@@ -106,7 +124,7 @@ function buildViewStatisticsButton(contentElement) {
     viewCurrentProductStatisticsButton.textContent = "Смотреть статистику по этому товару";
 
     viewCurrentProductStatisticsButton.addEventListener("click", () => {
-        //
+        fetchProductId((productId) => showStatistics(productId, contentElement));
     });
 
     contentElement.append(viewCurrentProductStatisticsButton);
@@ -118,8 +136,8 @@ function buildListAllTrackingProductsButton(contentElement) {
     listButton.textContent = "Просмотреть все отслеживаемые!";
 
     listButton.addEventListener("click", () => {
-        //todo: лучше все это вынести в buildAllTrackingListContentBuild(), который тоже с base начнет
         getAllTrackingProducts((numbers) => {
+            //todo: лучше все это вынести в buildAllTrackingListContentBuild(), который тоже с base начнет
             listButton.remove();
             contentElement.append(generateLinksList(numbers));
         });
@@ -128,20 +146,17 @@ function buildListAllTrackingProductsButton(contentElement) {
     contentElement.append(listButton);
 }
 
+function buildHomeButton(contentElement) {
+    const homeButton = document.createElement("button");
+    homeButton.id = "homeButton";
+    homeButton.textContent = "<- Back <-";
 
-//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
-//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
-//-------------------+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ построение основных кнопок
+    homeButton.addEventListener("click", () => {
+        buildMainContentPage(contentElement);
+    });
 
-
-
-
-
-
-
-
-
-
+    contentElement.append(homeButton);
+}
 
 //------------------------------------------------------------------------вспомогательные ф-ии:
 
@@ -166,7 +181,7 @@ function generateLinksList(productsIdsArray) {
 
         a.href = link;
         a.textContent = link;
-        a.target = "_blank"; // Открывать ссылки в новой вкладке
+        a.target = "_blank";
 
         li.appendChild(a);
         ul.appendChild(li);
@@ -181,11 +196,37 @@ function addProduct(id, contentElement) {
     //saving into local storage:
     chrome.runtime.sendMessage({ action: "addProduct", id: id }, (response) => {
         if (response && response.success) {
-            contentElement.innerHTML = `<p>Добавлено!</p>`;
+            buildOperationStatusPage(contentElement, "Успешно добавлено.");
         } else {
-            contentElement.innerHTML = `<p>Уже отслеживается</p>`;
+            buildOperationStatusPage(contentElement, "Не удалось добавить!");
         }
     });
+}
+
+function removeProduct(id, contentElement) {
+    //removing request to backend:
+    //todo: отправить запрос к бэку на удаление юзера-отслеживателя товара id
+    //remove from local storage:
+    chrome.runtime.sendMessage({ action: "removeProduct", id: id }, (response) => {
+        if (response && response.success) {
+            buildOperationStatusPage(contentElement, "Удалено из отслеживания!");
+        } else {
+            buildOperationStatusPage(contentElement, "Не удалось удалить из отслеживания!");
+        }
+    });
+}
+
+function showStatistics(id, contentElement) {
+    // get statistics request to backend:
+    // todo: отправлять запрос к бэку
+    // show statistics:
+    const success = true;//todo: получили или нет ответ от бэка
+    if (success) {
+        const messageFromBack = "Некоторо есообщение про статистику с бэка.";
+        buildStatisticsPage(contentElement, messageFromBack);
+    } else {
+        buildOperationStatusPage(contentElement, "Не удалось построить график статистики и прогноза, попробуйте позже.");
+    }
 }
 
 function fetchProductId(callback) {
@@ -203,7 +244,7 @@ function isTrackingProduct(callback, id) {
         if (response && response.success) {
             callback(response.tracking);
         } else {
-            callback(false); // Если ошибка, считаем, что товар не отслеживается
+            callback(false);
         }
     });
 }
