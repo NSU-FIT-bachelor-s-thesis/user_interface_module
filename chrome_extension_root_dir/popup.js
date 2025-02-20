@@ -33,8 +33,8 @@ function buildOperationStatusPage(contentElement, messageString) {
     buildHomeButton(contentElement);
 }
 
-function buildStatisticsPage(contentElement, messageString) {
-    //todo: добавить картинку с графиком (передается в аргументах)
+function buildStatisticsPage(contentElement, messageString, imageUrl) {
+    //todo: рисовать imageUrl
     buildBaseContent(contentElement);
 
     const message = document.createElement("p");
@@ -196,41 +196,50 @@ function generateLinksList(productsIdsArray) {
 
 function addProduct(id, contentElement) {
     //saving request to backend:
-    //todo: отправить запрос к бэку на добавление юзера-отслеживателя товара id
-    //saving into local storage:
-    chrome.runtime.sendMessage({ action: "addProduct", id: id }, (response) => {
-        if (response && response.success) {
-            buildOperationStatusPage(contentElement, "Успешно добавлено.");
-        } else {
-            buildOperationStatusPage(contentElement, "Не удалось добавить!");
-        }
-    });
+    addProductBack(id)
+        .then(message => {
+            //saving into local storage:
+            chrome.runtime.sendMessage({ action: "addProduct", id: id }, (response) => {
+                if (response && response.success) {
+                    buildOperationStatusPage(contentElement, message);
+                } else {
+                    buildOperationStatusPage(contentElement, "Не удалось добавить!");
+                }
+            });
+        })
+        .catch(error => {
+            buildOperationStatusPage(contentElement, error.message);
+        });
 }
 
 function removeProduct(id, contentElement) {
     //removing request to backend:
-    //todo: отправить запрос к бэку на удаление юзера-отслеживателя товара id
-    //remove from local storage:
-    chrome.runtime.sendMessage({ action: "removeProduct", id: id }, (response) => {
-        if (response && response.success) {
-            buildOperationStatusPage(contentElement, "Удалено из отслеживания!");
-        } else {
-            buildOperationStatusPage(contentElement, "Не удалось удалить из отслеживания!");
-        }
-    });
+    removeProductBack(id)
+        .then(message => {
+            //remove from local storage:
+            chrome.runtime.sendMessage({ action: "removeProduct", id: id }, (response) => {
+                if (response && response.success) {
+                    buildOperationStatusPage(contentElement, message);
+                } else {
+                    buildOperationStatusPage(contentElement, "Не удалось удалить из отслеживания!");
+                }
+            });
+        })
+        .catch(error => {
+            buildOperationStatusPage(contentElement, error.message);
+        });
 }
 
 function showStatistics(id, contentElement) {
     // get statistics request to backend:
-    // todo: отправлять запрос к бэку
-    // show statistics:
-    const success = true;//todo: получили или нет ответ от бэка
-    if (success) {
-        const messageFromBack = "Некоторо есообщение про статистику с бэка.";
-        buildStatisticsPage(contentElement, messageFromBack);
-    } else {
-        buildOperationStatusPage(contentElement, "Не удалось построить график статистики и прогноза, попробуйте позже.");
-    }
+    getProductStatsBack(id)
+        .then(stats => {
+            // show statistics:
+            buildStatisticsPage(contentElement, stats.message, stats.imageUrl);
+        })
+        .catch(error => {
+            buildOperationStatusPage(contentElement, error.message);
+        });
 }
 
 function fetchProductId(callback) {
@@ -251,4 +260,67 @@ function isTrackingProduct(callback, id) {
             callback(false);
         }
     });
+}
+
+//--------------------------------------------------------- ф-ии для обращения к back
+const API_BASE_URL = "http://localhost:8000";
+
+function addProductBack(productId) {
+    return fetch(`${API_BASE_URL}/add_product`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ product_id: productId })
+    })
+        .then(response => {
+            if (!response.ok) {
+                const message = response.headers.get("X-Message") || "Ошибка при попытке добавить товар в отслеживаемые.";
+                throw new Error(message);
+            }
+            return response.headers.get("X-Message");
+        })
+        .catch(error => {
+            throw new Error("Ошибка при попытке добавить товар в отслеживаемые. Сервис временно недоступен, попробуйте позже.");
+        });
+}
+
+function removeProductBack(productId) {
+    return fetch(`${API_BASE_URL}/remove_product`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ product_id: productId })
+    })
+        .then(response => {
+            if (!response.ok) {
+                const message = response.headers.get("X-Message") || "Ошибка при попытке удалить товар из отслеживаемых.";
+                throw new Error(message);
+            }
+            return response.headers.get("X-Message");
+        })
+        .catch(error => {
+            throw new Error("Ошибка при попытке удалить товар из отслеживаемых. Сервис временно недоступен, попробуйте позже.");
+        });
+}
+
+function getProductStatsBack(productId) {
+    const url = new URL(`${API_BASE_URL}/get_product_stats`);
+    url.searchParams.append("product_id", productId);
+
+    return fetch(url, { method: "GET" })
+        .then(response => {
+            if (!response.ok) {
+                const message = response.headers.get("X-Message") || "Ошибка при попытке построить график статистики и прогноза.";
+                throw new Error(message);
+            }
+            return response.blob().then(blob => ({
+                message: response.headers.get("X-Message"),
+                imageUrl: URL.createObjectURL(blob)
+            }));
+        })
+        .catch(error => {
+            throw new Error("Ошибка при попытке построить график статистики и прогноза. Сервис временно недоступен, попробуйте позже.");
+        });
 }
