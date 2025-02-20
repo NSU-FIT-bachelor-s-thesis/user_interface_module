@@ -51,9 +51,13 @@ function buildStatisticsPage(contentElement, messageString, imageUrl) {
     buildHomeButton(contentElement);
 }
 
-function buildAllTrackingListPage(contentElement, numbers) {
+function buildAllTrackingListPage(contentElement, idsAndNames) {
     buildBaseContent(contentElement);
-    contentElement.append(generateLinksList(numbers));
+
+    const listName = document.createElement("h2");
+    listName.textContent = "Список отслеживаемых товаров";
+
+    contentElement.append(listName, generateLinksList(idsAndNames));
     buildHomeButton(contentElement);
 }
 
@@ -171,27 +175,30 @@ function buildHomeButton(contentElement) {
 
 //------------------------------------------------------------------------вспомогательные ф-ии:
 
-function getAllTrackingProducts(callback, contentElement) {
+function getAllTrackingProducts(callback) {
     chrome.runtime.sendMessage({ action: "getTrackedProducts" }, (response) => {
         if (response && response.success) {
             callback(response.numbers);
         } else {
-            callback([]); // Если что-то пошло не так, возвращаем пустой массив
+            callback([]);
         }
     });
 }
 
-function generateLinksList(productsIdsArray) {
-    let linksArray = productsIdsArray.map(num => `https://www.wildberries.ru/catalog/${num}/detail.aspx`);
+function generateLinksList(productsIdsAndNamesArray) {
+    let linksArray = productsIdsAndNamesArray.map(([id, name]) => ({
+        url: `https://www.wildberries.ru/catalog/${id}/detail.aspx`,
+        name: name
+    }));
 
     let ul = document.createElement("ul");
 
-    linksArray.forEach(link => {
+    linksArray.forEach(({ url, name }) => {
         let li = document.createElement("li");
         let a = document.createElement("a");
 
-        a.href = link;
-        a.textContent = link;//todo: сделать читабельную ссылку с названием товара (доставать название со страницы)
+        a.href = url;
+        a.textContent = name;
         a.target = "_blank";
 
         li.appendChild(a);
@@ -206,7 +213,7 @@ function addProduct(id, contentElement) {
     addProductBack(id)
         .then(message => {
             //saving into local storage:
-            chrome.runtime.sendMessage({ action: "addProduct", id: id }, (response) => {
+            chrome.runtime.sendMessage({ action: "addProduct", id: id}, (response) => {
                 if (response && response.success) {
                     buildOperationStatusPage(contentElement, message);
                 } else {
@@ -217,6 +224,16 @@ function addProduct(id, contentElement) {
         .catch(error => {
             buildOperationStatusPage(contentElement, error.message);
         });
+
+    //-----------------------------------------------------заглушка когда отключен бэк
+    // //saving into local storage:
+    // chrome.runtime.sendMessage({ action: "addProduct", id: id}, (response) => {
+    //     if (response && response.success) {
+    //         buildOperationStatusPage(contentElement, "ДОБАВЛЕН ТОВАР.");
+    //     } else {
+    //         buildOperationStatusPage(contentElement, "Не удалось добавить!");
+    //     }
+    // });
 }
 
 function removeProduct(id, contentElement) {
@@ -235,6 +252,15 @@ function removeProduct(id, contentElement) {
         .catch(error => {
             buildOperationStatusPage(contentElement, error.message);
         });
+
+    //-----------------------------------------------------заглушка когда отключен бэк
+    // chrome.runtime.sendMessage({ action: "removeProduct", id: id }, (response) => {
+    //     if (response && response.success) {
+    //         buildOperationStatusPage(contentElement, "УДАЛЕН ТОВАР.");
+    //     } else {
+    //         buildOperationStatusPage(contentElement, "Не удалось удалить из отслеживания!");
+    //     }
+    // });
 }
 
 function showStatistics(id, contentElement) {
@@ -247,6 +273,9 @@ function showStatistics(id, contentElement) {
         .catch(error => {
             buildOperationStatusPage(contentElement, error.message);
         });
+
+    //-----------------------------------------------------заглушка когда отключен бэк
+    // buildStatisticsPage(contentElement, "СООБЩЕНИЕ ПРО СТАТИСТИКУ", null);
 }
 
 function fetchProductId(callback) {
