@@ -63,34 +63,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "addProduct") {
-    let id = message.id;
-    let productName = "ИМЯ ПРОДУКТА" + id;//todo: доставать имя продукта
-    // productName = document.querySelector("h1")?.textContent?.trim();
-    // productName = document.querySelector('meta[property="og:title"]')?.content;
-    // productName = document.title;
+    if (message.action === "addProduct") {
+        let id = message.id.toString();
 
-    // Сохранение в локальное хранилище
-    chrome.storage.local.get(["numbers"], (result) => {
-      let savedNumbers = Array.isArray(result.numbers) ? result.numbers : [];
+        // получение названия продукта из текущей вкладки
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0) {
+                let productName = "Продукт" + id;
+            } else {
+              let productName = tabs[0].title || `Продукт ${id}`;
+            }
 
-      const exists = savedNumbers.some(pair => pair[0] === id);
+            // проверка, есть ли ID в названии, и отрезание всего после него
+            const idIndex = productName.indexOf(id);
+            if (idIndex !== -1) {
+                productName = productName.substring(0, idIndex).trim(); // удаление лишних пробелов
+            }
 
-      if (!exists) {
-        savedNumbers.push([id, productName]);
-        chrome.storage.local.set({ numbers: savedNumbers }, () => {
-          console.log(`Product ${id} added to tracking list`);
-          sendResponse({ success: true });
+            // сохранение в локальное хранилище
+            chrome.storage.local.get(["numbers"], (result) => {
+                let savedNumbers = Array.isArray(result.numbers) ? result.numbers : [];
+
+                const exists = savedNumbers.some(pair => pair[0] === id);
+
+                if (!exists) {
+                    savedNumbers.push([id, productName]);
+                    chrome.storage.local.set({ numbers: savedNumbers }, () => {
+                        console.log(`Product ${id} ("${productName}") added to tracking list`);
+                        sendResponse({ success: true });
+                    });
+                } else {
+                    sendResponse({ success: false, message: "Already tracked" });
+                }
+            });
         });
-      } else {
-        sendResponse({ success: false, message: "Already tracked" });
-      }
-    });
 
-    return true;
-  }
+        return true;
+    }
 });
+
+
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "removeProduct") {
