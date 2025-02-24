@@ -70,10 +70,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // получение названия продукта из текущей вкладки
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            let productName;
             if (tabs.length === 0) {
-                let productName = "Продукт" + id;
+                productName = "Продукт" + id;
             } else {
-              let productName = tabs[0].title || `Продукт ${id}`;
+              productName = tabs[0].title || `Продукт ${id}`;
             }
 
             // проверка, есть ли ID в названии, и отрезание всего после него
