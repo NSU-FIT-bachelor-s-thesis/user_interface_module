@@ -299,7 +299,7 @@ function isTrackingProduct(callback, id) {
 }
 
 //--------------------------------------------------------- ф-ии для обращения к back
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8080";
 
 function addProductBack(productId) {
     return fetch(`${API_BASE_URL}/add_product`, {
