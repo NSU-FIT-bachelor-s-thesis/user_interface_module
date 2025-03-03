@@ -17,6 +17,7 @@ function buildMainContentPage(contentElement) {
                 buildDefaultWbContent(contentElement);
             }
         } else {
+            appendDescription(contentElement);
             buildDefaultContent(contentElement);
         }
     });
@@ -65,7 +66,9 @@ function buildAllTrackingListPage(contentElement, idsAndNames) {
 
 function buildBaseContent(contentElement) {
     contentElement.innerHTML = "";
+}
 
+function appendDescription(contentElement) {
     const message = document.createElement("p");
     message.textContent = "Расширение для отслеживания статистики и прогнозов цен товаров на сайте Wildberries.";
 
@@ -217,7 +220,7 @@ function addProduct(id, contentElement) {
                 if (response && response.success) {
                     buildOperationStatusPage(contentElement, message);
                 } else {
-                    buildOperationStatusPage(contentElement, "Не удалось добавить!");
+                    buildOperationStatusPage(contentElement, "Не удалось добавить товар в отслеживание.");
                 }
             });
         })
@@ -245,7 +248,7 @@ function removeProduct(id, contentElement) {
                 if (response && response.success) {
                     buildOperationStatusPage(contentElement, message);
                 } else {
-                    buildOperationStatusPage(contentElement, "Не удалось удалить из отслеживания!");
+                    buildOperationStatusPage(contentElement, "Не удалось удалить товар из отслеживания.");
                 }
             });
         })
@@ -311,10 +314,9 @@ function addProductBack(productId) {
     })
         .then(response => {
             if (!response.ok) {
-                const message = response.headers.get("X-Message") || "Ошибка при попытке добавить товар в отслеживаемые.";
-                throw new Error(message);
+                throw new Error("Ошибка при попытке добавить товар в отслеживаемые.");
             }
-            return response.headers.get("X-Message");
+            return "Товар добавлен в отслеживаемые.";
         })
         .catch(error => {
             throw new Error("Ошибка при попытке добавить товар в отслеживаемые. Сервис временно недоступен, попробуйте позже.");
@@ -331,10 +333,9 @@ function removeProductBack(productId) {
     })
         .then(response => {
             if (!response.ok) {
-                const message = response.headers.get("X-Message") || "Ошибка при попытке удалить товар из отслеживаемых.";
-                throw new Error(message);
+                throw new Error("Ошибка при попытке удалить товар из отслеживаемых.");
             }
-            return response.headers.get("X-Message");
+            return "Товар удалён из отслеживаемых.";
         })
         .catch(error => {
             throw new Error("Ошибка при попытке удалить товар из отслеживаемых. Сервис временно недоступен, попробуйте позже.");
@@ -348,15 +349,45 @@ function getProductStatsBack(productId) {
     return fetch(url, { method: "GET" })
         .then(response => {
             if (!response.ok) {
-                const message = response.headers.get("X-Message") || "Ошибка при попытке построить график статистики и прогноза.";
-                throw new Error(message);
+                throw new Error("Ошибка при попытке получить статистику и прогноз.");
             }
-            return response.blob().then(blob => ({
-                message: response.headers.get("X-Message"),
-                imageUrl: URL.createObjectURL(blob)
-            }));
+
+            return response.blob()
+                .then(blob => {
+                    let backStatus = response.headers.get("X-Status");
+                    let backImageUrl = URL.createObjectURL(blob);
+                    let backMessage;
+                    switch (backStatus) {
+                        case "STATISTICS_AND_PREDICTIONS":
+                            backMessage = "Статистика и прогноз.";
+                            break;
+                        case "BROKEN_DATA__STATISTICS_ONLY":
+                            backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
+                            break;
+                        case "NOT_ENOUGH_DATA_YET__STATISTICS_ONLY":
+                            backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
+                            break;
+                        case "TRY_LATER__STATISTICS_ONLY":
+                            backMessage = "Статистика без прогноза. Ошибка при получении прогноза, попробуйте позже.";
+                            break;
+                        case "NO_DATA_YET":
+                            backImageUrl = null;
+                            backMessage = "В процессе сбора данных.";
+                            break;
+                        default:
+                            backImageUrl = null;
+                            backMessage = "Не удалось обработать полученную статистику и прогноз. Попробуйте позже.";
+                    }
+                    return {
+                        message: backMessage,
+                        imageUrl: backImageUrl
+                    };
+                })
+                .catch(error => {
+                    throw new Error("Ошибка при попытке получить статистику и прогноз. Сервис временно недоступен, попробуйте позже.");
+                });
         })
         .catch(error => {
-            throw new Error("Ошибка при попытке построить график статистики и прогноза. Сервис временно недоступен, попробуйте позже.");
+            throw new Error("Ошибка при попытке получить статистику и прогноз. Сервис временно недоступен, попробуйте позже.");
         });
 }
