@@ -167,7 +167,7 @@ function buildListAllTrackingProductsButton(contentElement) {
 function buildHomeButton(contentElement) {
     const homeButton = document.createElement("button");
     homeButton.id = "homeButton";
-    homeButton.textContent = "<- Back <-";
+    homeButton.textContent = "<- back";
 
     homeButton.addEventListener("click", () => {
         buildMainContentPage(contentElement);
