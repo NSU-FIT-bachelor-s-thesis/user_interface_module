@@ -352,31 +352,41 @@ function getProductStatsBack(productId) {
                 throw new Error("Ошибка при попытке получить статистику и прогноз.");
             }
 
+            console.log("headers: " + JSON.stringify(response.headers));
+
+            let backStatus = response.headers.get("X-Status");
+            let backMessage;
+            let isImageActual;
+            switch (backStatus) {
+                case "STATISTICS_AND_PREDICTIONS":
+                    backMessage = "Статистика и прогноз.";
+                    isImageActual = true;
+                    break;
+                case "BROKEN_DATA__STATISTICS_ONLY":
+                    backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
+                    isImageActual = true;
+                    break;
+                case "NOT_ENOUGH_DATA_YET__STATISTICS_ONLY":
+                    backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
+                    isImageActual = true;
+                    break;
+                case "TRY_LATER__STATISTICS_ONLY":
+                    backMessage = "Статистика без прогноза. Ошибка при получении прогноза, попробуйте позже.";
+                    isImageActual = true;
+                    break;
+                case "NO_DATA_YET":
+                    backMessage = "В процессе сбора данных.";
+                    isImageActual = false;
+                    break;
+                default:
+                    backMessage = "Не удалось обработать полученную статистику и прогноз. Попробуйте позже.";
+                    isImageActual = false;
+            }
             return response.blob()
                 .then(blob => {
-                    let backStatus = response.headers.get("X-Status");
-                    let backImageUrl = URL.createObjectURL(blob);
-                    let backMessage;
-                    switch (backStatus) {
-                        case "STATISTICS_AND_PREDICTIONS":
-                            backMessage = "Статистика и прогноз.";
-                            break;
-                        case "BROKEN_DATA__STATISTICS_ONLY":
-                            backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
-                            break;
-                        case "NOT_ENOUGH_DATA_YET__STATISTICS_ONLY":
-                            backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
-                            break;
-                        case "TRY_LATER__STATISTICS_ONLY":
-                            backMessage = "Статистика без прогноза. Ошибка при получении прогноза, попробуйте позже.";
-                            break;
-                        case "NO_DATA_YET":
-                            backImageUrl = null;
-                            backMessage = "В процессе сбора данных.";
-                            break;
-                        default:
-                            backImageUrl = null;
-                            backMessage = "Не удалось обработать полученную статистику и прогноз. Попробуйте позже.";
+                    let backImageUrl = null;
+                    if (isImageActual) {
+                        let backImageUrl = URL.createObjectURL(blob);
                     }
                     return {
                         message: backMessage,
