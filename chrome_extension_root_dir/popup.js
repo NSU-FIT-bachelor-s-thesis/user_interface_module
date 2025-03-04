@@ -1,3 +1,6 @@
+const API_BASE_URL = "http://localhost:8000";
+
+
 document.addEventListener("DOMContentLoaded", buildContentOnStart);
 
 function buildContentOnStart() {
@@ -167,7 +170,7 @@ function buildListAllTrackingProductsButton(contentElement) {
 function buildHomeButton(contentElement) {
     const homeButton = document.createElement("button");
     homeButton.id = "homeButton";
-    homeButton.textContent = "<- back";
+    homeButton.textContent = "back";
 
     homeButton.addEventListener("click", () => {
         buildMainContentPage(contentElement);
@@ -302,7 +305,6 @@ function isTrackingProduct(callback, id) {
 }
 
 //--------------------------------------------------------- ф-ии для обращения к back
-const API_BASE_URL = "http://localhost:8080";
 
 function addProductBack(productId) {
     return fetch(`${API_BASE_URL}/add_product`, {
