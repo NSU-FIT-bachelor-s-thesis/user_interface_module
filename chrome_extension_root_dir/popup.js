@@ -37,19 +37,19 @@ function buildOperationStatusPage(contentElement, messageString) {
     buildHomeButton(contentElement);
 }
 
-function buildStatisticsPage(contentElement, messageString, imageUrl) {
+function buildStatisticsPage(contentElement, messageString, svgString) {
     buildBaseContent(contentElement);
 
     const message = document.createElement("p");
     message.textContent = messageString;
     contentElement.append(message);
 
-    if (imageUrl) {
-        const image = document.createElement("img");
-        image.src = imageUrl;
-        image.alt = "График статистики";
-        image.style.maxWidth = "100%";
-        contentElement.append(image);
+    if (svgString) {
+        const svgContainer = document.createElement("div");
+        svgContainer.innerHTML = svgString;
+        svgContainer.style.maxWidth = "100%";
+        svgContainer.style.overflowX = "auto";
+        contentElement.append(svgContainer);
     }
 
     buildHomeButton(contentElement);
@@ -274,7 +274,7 @@ function showStatistics(id, contentElement) {
     getProductStatsBack(id)
         .then(stats => {
             // show statistics:
-            buildStatisticsPage(contentElement, stats.message, stats.imageUrl);
+            buildStatisticsPage(contentElement, stats.message, stats.svgGraph);
         })
         .catch(error => {
             buildOperationStatusPage(contentElement, error.message);
@@ -353,51 +353,39 @@ function getProductStatsBack(productId) {
             if (!response.ok) {
                 throw new Error("Ошибка при попытке получить статистику и прогноз.");
             }
+            return response.json();
+        })
+        .then(data => {
+            const backStatus = data.status || null;
+            const svgGraph = data.graph || null;
 
-            console.log("headers: " + JSON.stringify(response.headers));
+            console.log("AAA: ", data);
+            console.log("STATUS: ", backStatus);
 
-            let backStatus = response.headers.get("X-Status");
             let backMessage;
-            let isImageActual;
             switch (backStatus) {
                 case "STATISTICS_AND_PREDICTIONS":
                     backMessage = "Статистика и прогноз.";
-                    isImageActual = true;
                     break;
                 case "BROKEN_DATA__STATISTICS_ONLY":
                     backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
-                    isImageActual = true;
                     break;
                 case "NOT_ENOUGH_DATA_YET__STATISTICS_ONLY":
                     backMessage = "Пока что недостаточно данных для прогноза. В процессе сбора.";
-                    isImageActual = true;
                     break;
                 case "TRY_LATER__STATISTICS_ONLY":
                     backMessage = "Статистика без прогноза. Ошибка при получении прогноза, попробуйте позже.";
-                    isImageActual = true;
                     break;
                 case "NO_DATA_YET":
                     backMessage = "В процессе сбора данных.";
-                    isImageActual = false;
                     break;
                 default:
                     backMessage = "Не удалось обработать полученную статистику и прогноз. Попробуйте позже.";
-                    isImageActual = false;
             }
-            return response.blob()
-                .then(blob => {
-                    let backImageUrl = null;
-                    if (isImageActual) {
-                        let backImageUrl = URL.createObjectURL(blob);
-                    }
-                    return {
-                        message: backMessage,
-                        imageUrl: backImageUrl
-                    };
-                })
-                .catch(error => {
-                    throw new Error("Ошибка при попытке получить статистику и прогноз. Сервис временно недоступен, попробуйте позже.");
-                });
+            return {
+                message: backMessage,
+                svgGraph: svgGraph
+            };
         })
         .catch(error => {
             throw new Error("Ошибка при попытке получить статистику и прогноз. Сервис временно недоступен, попробуйте позже.");
