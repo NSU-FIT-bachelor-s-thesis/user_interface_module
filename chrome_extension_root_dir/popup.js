@@ -47,8 +47,16 @@ function buildStatisticsPage(contentElement, messageString, svgString) {
     if (svgString) {
         const svgContainer = document.createElement("div");
         svgContainer.innerHTML = svgString;
-        svgContainer.style.maxWidth = "100%";
-        svgContainer.style.overflowX = "auto";
+
+        svgContainer.style.width = "720px";
+        svgContainer.style.height = "432px";
+
+        svgContainer.style.display = "flex";
+        svgContainer.style.justifyContent = "center";
+        svgContainer.style.alignItems = "center";
+
+        svgContainer.style.overflow = "auto";
+
         contentElement.append(svgContainer);
     }
 
