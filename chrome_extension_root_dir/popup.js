@@ -211,9 +211,15 @@ function generateLinksList(productsIdsAndNamesArray) {
         let li = document.createElement("li");
         let a = document.createElement("a");
 
-        a.href = url;
+        // a.href = url;
         a.textContent = name;
-        a.target = "_blank";
+        // a.target = "_blank";
+
+        a.addEventListener('click', (event) => {
+            event.preventDefault();
+            chrome.tabs.update({ url: url });
+        });
+
 
         li.appendChild(a);
         ul.appendChild(li);
