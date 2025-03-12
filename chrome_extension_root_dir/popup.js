@@ -207,6 +207,10 @@ function generateLinksList(productsIdsAndNamesArray) {
 
     let ul = document.createElement("ul");
 
+    ul.style.maxHeight = "250px";
+    ul.style.overflowY = "auto";
+    ul.style.border = "1px solid #ccc";
+
     linksArray.forEach(({ url, name }) => {
         let li = document.createElement("li");
         let a = document.createElement("a");
